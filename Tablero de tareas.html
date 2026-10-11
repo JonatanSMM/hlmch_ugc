@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tablero de tareas</title>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef2f6;--sf:#fff;--col:#e3e9f0;--ink:#14202e;--mut:#5b6b7c;--line:#d2dbe5;--ac:#0b6bcb;--acink:#fff;
+--q1:#b3261e;--q1b:#fde8e6;--q2:#1857a8;--q2b:#e3eefb;--q3:#8a5a00;--q3b:#fdf0d5;--q4:#4d5b6a;--q4b:#e8edf2;--ok:#1d7a46}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1620;--sf:#18232f;--col:#121c27;--ink:#e7edf3;--mut:#9aabbc;--line:#2a3948;--ac:#4aa3ff;--acink:#06101a;
+--q1:#ff8f86;--q1b:#3a1b19;--q2:#8dc0ff;--q2b:#16283d;--q3:#f0c36a;--q3b:#38290c;--q4:#b4c2d0;--q4b:#202c38;--ok:#5fd18c}}
+:root[data-theme="dark"]{--bg:#0e1620;--sf:#18232f;--col:#121c27;--ink:#e7edf3;--mut:#9aabbc;--line:#2a3948;--ac:#4aa3ff;--acink:#06101a;
+--q1:#ff8f86;--q1b:#3a1b19;--q2:#8dc0ff;--q2b:#16283d;--q3:#f0c36a;--q3b:#38290c;--q4:#b4c2d0;--q4b:#202c38;--ok:#5fd18c}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 Figtree,system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line);background:var(--sf)}
+h1{font-size:1.25rem;margin:0;font-weight:700}
+nav{display:flex;gap:6px}
+.tab,.chip,.btn{border:1px solid var(--line);background:var(--sf);border-radius:999px;padding:8px 16px;cursor:pointer;min-height:40px}
+.tab[aria-selected=true],.chip[aria-pressed=true]{background:var(--ac);border-color:var(--ac);color:var(--acink);font-weight:600}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:var(--acink);font-weight:600}
+.btn.del{color:var(--q1)}
+:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+main{padding:16px 20px;max-width:1500px;margin:0 auto}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.chip{padding:6px 14px;min-height:36px;font-size:.9rem}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+.board{display:grid;grid-template-columns:repeat(4,minmax(220px,1fr));gap:12px;overflow-x:auto;padding-bottom:6px}
+.col{background:var(--col);border:1px solid var(--line);border-radius:14px;padding:10px;min-height:320px}
+.col.over{outline:2px dashed var(--ac)}
+.col h2{font-size:.95rem;margin:2px 4px 10px;display:flex;justify-content:space-between}
+.col h2 span{color:var(--mut);font-weight:500}
+.card{background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;cursor:grab;display:block;width:100%;text-align:left}
+.card b{display:block;font-weight:600;margin-bottom:6px;overflow-wrap:anywhere}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.78rem;font-weight:500}
+.q1{background:var(--q1b);color:var(--q1)}.q2{background:var(--q2b);color:var(--q2)}.q3{background:var(--q3b);color:var(--q3)}.q4{background:var(--q4b);color:var(--q4)}
+.due{font-size:.82rem;color:var(--mut);margin-top:6px}
+.due.late{color:var(--q1);font-weight:600}.due.today{color:var(--q3);font-weight:600}
+.side{background:var(--sf);border:1px solid var(--line);border-radius:14px;padding:12px;position:sticky;top:12px}
+.side h2{font-size:1rem;margin:2px 4px 4px}
+.side p.sub{margin:0 4px 10px;color:var(--mut);font-size:.85rem}
+.empty{color:var(--mut);padding:8px 4px;font-size:.9rem}
+.form{max-width:640px;background:var(--sf);border:1px solid var(--line);border-radius:14px;padding:20px;display:grid;gap:16px}
+label{display:grid;gap:6px;font-weight:600;font-size:.92rem}
+input,select,textarea{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg);width:100%}
+textarea{min-height:110px;resize:vertical}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.hint{font-weight:400;color:var(--mut);font-size:.82rem}
+dialog{border:1px solid var(--line);border-radius:16px;background:var(--sf);color:var(--ink);padding:20px;width:min(520px,92vw)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog h3{margin:0 0 8px;font-size:1.15rem;overflow-wrap:anywhere}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;justify-content:flex-end}
+.det{white-space:pre-wrap;margin:12px 0;overflow-wrap:anywhere}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.on{opacity:1}
+.ro{background:var(--q3b);color:var(--q3);padding:8px 12px;border-radius:10px;margin-bottom:12px;font-size:.9rem}
+@media (max-width:900px){.layout{grid-template-columns:minmax(0,1fr)}.side{position:static}.row{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Tablero de tareas</h1>
+  <nav role="tablist">
+    <button class="tab" role="tab" id="t-board" aria-selected="true" onclick="go('board')">Tablero</button>
+    <button class="tab" role="tab" id="t-form" aria-selected="false" onclick="go('form')">Nueva tarea</button>
+  </nav>
+</header>
+<main>
+  <section id="v-board">
+    <div id="ro" class="ro" hidden>Tienes acceso de solo lectura: puedes ver las tareas, pero no cambiarlas.</div>
+    <div class="filters" id="filters"></div>
+    <div class="layout">
+      <div class="board" id="board"></div>
+      <aside class="side">
+        <h2>Próximos vencimientos</h2>
+        <p class="sub" id="sub"></p>
+        <div id="upc"></div>
+      </aside>
+    </div>
+  </section>
+  <section id="v-form" hidden>
+    <div class="form">
+      <h2 id="ftitle" style="margin:0;font-size:1.1rem">Registrar tarea</h2>
+      <label>Título <input id="f-titulo" maxlength="140" placeholder="Qué hay que hacer"></label>
+      <label>Detalle <textarea id="f-detalle" placeholder="Describe la tarea, la reunión o la idea con tus palabras - N° SISGEDO"></textarea></label>
+      <div class="row">
+        <label>Tipo
+          <select id="f-tipo"><option value="tarea">Tarea o trámite</option><option value="idea">Idea para implementar</option></select>
+        </label>
+        <label>Cuadrante Eisenhower
+          <select id="f-q">
+            <option value="q1">Urgente e Importante</option>
+            <option value="q2" selected>Importante no Urgente</option>
+            <option value="q3">Urgente no Importante</option>
+            <option value="q4">Ni Urgente ni Importante</option>
+          </select>
+        </label>
+      </div>
+      <div class="row">
+        <label>Fecha de vencimiento <input type="date" id="f-vence"></label>
+        <label>Estado
+          <select id="f-estado">
+            <option value="porhacer">Por hacer</option><option value="proceso">En proceso</option>
+            <option value="revision">En revisión</option><option value="hecho">Hecho</option>
+          </select>
+        </label>
+      </div>
+      <div class="acts" style="margin:0">
+        <button class="btn" onclick="resetForm();go('board')">Cancelar</button>
+        <button class="btn pri" id="f-save" onclick="saveForm()">Guardar tarea</button>
+      </div>
+      <div id="ferr" class="hint" style="color:var(--q1)"></div>
+    </div>
+  </section>
+</main>
+<dialog id="dlg"></dialog>
+<div id="toast" role="status"></div>
+<script>
+var Q={q1:'Urgente e Importante',q2:'Importante no Urgente',q3:'Urgente no Importante',q4:'Ni Urgente ni Importante'};
+var E={porhacer:'Por hacer',proceso:'En proceso',revision:'En revisión',hecho:'Hecho'};
+var tasks=[],filter='all',editId=null,canWrite=true,coll=null;
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.className='on';clearTimeout(toast.h);toast.h=setTimeout(function(){t.className=''},2400)}
+function dias(v){if(!v)return null;var t=new Date();t.setHours(0,0,0,0);var p=v.split('-').map(Number);return Math.round((new Date(p[0],p[1]-1,p[2])-t)/864e5)}
+function cuando(n){if(n===null)return 'Sin fecha';if(n<0)return 'Venció hace '+(-n)+(n===-1?' día':' días');if(n===0)return 'Vence hoy';if(n===1)return 'Vence mañana';return 'Vence en '+n+' días'}
+function fmt(v){return v?v.split('-').reverse().join('-'):'—'}
+function dueCls(t){var n=dias(t.vence);return t.estado==='hecho'?'':(n!==null&&n<0?'late':n===0?'today':'')}
+function byDate(a,b){if(!a.vence&&!b.vence)return (a.creada||0)-(b.creada||0);if(!a.vence)return 1;if(!b.vence)return -1;return a.vence<b.vence?-1:a.vence>b.vence?1:0}
+
+/* Almacenamiento: base compartida si existe; si no, solo este navegador */
+function persist(){try{localStorage.setItem('tareas',JSON.stringify(tasks))}catch(e){}}
+async function saveTask(id,data){
+  if(coll){await coll.doc(id).set(data)}
+  else{var i=tasks.findIndex(function(t){return t.id===id});var o=Object.assign({id:id},data);if(i<0)tasks.push(o);else tasks[i]=o;persist();render()}
+}
+async function patchTask(id,data){
+  if(coll){await coll.doc(id).update(data)}
+  else{var t=tasks.find(function(x){return x.id===id});if(t){Object.assign(t,data);persist();render()}}
+}
+async function delTask(id){
+  if(coll){await coll.doc(id).delete()}
+  else{tasks=tasks.filter(function(t){return t.id!==id});persist();render()}
+}
+function newId(){return coll?coll.doc().id:'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+
+/* Vistas */
+function go(v){
+  document.getElementById('v-board').hidden=v!=='board';
+  document.getElementById('v-form').hidden=v!=='form';
+  document.getElementById('t-board').setAttribute('aria-selected',v==='board');
+  document.getElementById('t-form').setAttribute('aria-selected',v==='form');
+  if(v==='form'&&!editId)resetForm();
+  window.scrollTo(0,0);
+}
+function cardHTML(t){
+  return '<button class="card" draggable="'+canWrite+'" data-id="'+esc(t.id)+'"><b>'+esc(t.titulo)+(t.tipo==='idea'?' (idea)':'')+'</b>'+
+  '<span class="pill '+esc(t.q)+'">'+esc(Q[t.q]||'')+'</span>'+
+  '<div class="due '+dueCls(t)+'">'+esc(t.vence?cuando(dias(t.vence)):'Sin fecha')+'</div></button>';
+}
+function render(){
+  var f=document.getElementById('filters');
+  var opts=[['all','Todas']].concat(Object.keys(Q).map(function(k){return [k,Q[k]]}));
+  f.innerHTML=opts.map(function(o){return '<button class="chip" aria-pressed="'+(filter===o[0])+'" data-f="'+o[0]+'">'+o[1]+'</button>'}).join('');
+  var shown=tasks.filter(function(t){return filter==='all'||t.q===filter}).sort(byDate);
+  document.getElementById('board').innerHTML=Object.keys(E).map(function(k){
+    var l=shown.filter(function(t){return t.estado===k});
+    return '<div class="col" data-col="'+k+'"><h2>'+E[k]+'<span>'+l.length+'</span></h2>'+(l.length?l.map(cardHTML).join(''):'<div class="empty">Sin tareas</div>')+'</div>';
+  }).join('');
+  var up=tasks.filter(function(t){return t.estado!=='hecho'}).sort(byDate);
+  var late=up.filter(function(t){var n=dias(t.vence);return n!==null&&n<0}).length;
+  document.getElementById('sub').textContent=up.length?(up.length+' pendientes, '+late+' vencidas'):'Todo al día';
+  document.getElementById('upc').innerHTML=up.length?up.map(cardHTML).join(''):'<div class="empty">No hay tareas pendientes. Registra una en “Nueva tarea”.</div>';
+  document.getElementById('ro').hidden=canWrite;
+}
+function preview(id){
+  var t=tasks.find(function(x){return x.id===id});if(!t)return;
+  var d=document.getElementById('dlg');
+  d.innerHTML='<h3>'+esc(t.titulo)+'</h3><span class="pill '+esc(t.q)+'">'+esc(Q[t.q]||'')+'</span>'+
+  '<div class="due '+dueCls(t)+'" style="margin-top:8px">'+esc(fmt(t.vence))+' · '+esc(cuando(dias(t.vence)))+'</div>'+
+  '<div class="det">'+(t.detalle?esc(t.detalle):'<span class="hint">Sin detalle</span>')+'</div>'+
+  '<label>Estado <select id="p-estado"'+(canWrite?'':' disabled')+'>'+Object.keys(E).map(function(k){return '<option value="'+k+'"'+(k===t.estado?' selected':'')+'>'+E[k]+'</option>'}).join('')+'</select></label>'+
+  '<div class="acts">'+(canWrite?'<button class="btn del" data-a="del">Eliminar</button><button class="btn" data-a="edit">Editar</button>':'')+'<button class="btn pri" data-a="close">Cerrar</button></div>';
+  d.dataset.id=id;d.showModal();
+}
+function resetForm(){
+  editId=null;['f-titulo','f-detalle','f-vence'].forEach(function(i){document.getElementById(i).value=''});
+  document.getElementById('f-q').value='q2';document.getElementById('f-estado').value='porhacer';document.getElementById('f-tipo').value='tarea';
+  document.getElementById('ftitle').textContent='Registrar tarea';document.getElementById('f-save').textContent='Guardar tarea';document.getElementById('ferr').textContent='';
+}
+async function saveForm(){
+  var titulo=document.getElementById('f-titulo').value.trim(),er=document.getElementById('ferr');
+  if(!titulo){er.textContent='Escribe un título para guardar la tarea.';document.getElementById('f-titulo').focus();return}
+  if(!canWrite){er.textContent='No tienes permiso para guardar cambios en este tablero.';return}
+  var old=editId&&tasks.find(function(t){return t.id===editId});
+  var data={titulo:titulo,detalle:document.getElementById('f-detalle').value.trim(),tipo:document.getElementById('f-tipo').value,q:document.getElementById('f-q').value,
+    vence:document.getElementById('f-vence').value,estado:document.getElementById('f-estado').value,creada:old?old.creada:Date.now()};
+  try{await saveTask(editId||newId(),data);toast(editId?'Cambios guardados':'Tarea guardada');resetForm();go('board')}
+  catch(e){er.textContent='No se pudo guardar. Revisa tu conexión e inténtalo otra vez.'}
+}
+function startEdit(id){
+  var t=tasks.find(function(x){return x.id===id});if(!t)return;editId=id;
+  document.getElementById('f-titulo').value=t.titulo||'';document.getElementById('f-detalle').value=t.detalle||'';
+  document.getElementById('f-tipo').value=t.tipo||'tarea';document.getElementById('f-q').value=t.q||'q2';
+  document.getElementById('f-vence').value=t.vence||'';document.getElementById('f-estado').value=t.estado||'porhacer';
+  document.getElementById('ftitle').textContent='Editar tarea';document.getElementById('f-save').textContent='Guardar cambios';go('form');
+}
+
+/* Eventos */
+document.addEventListener('click',async function(e){
+  var c=e.target.closest('[data-f]');if(c){filter=c.dataset.f;render();return}
+  var k=e.target.closest('.card');if(k){preview(k.dataset.id);return}
+  var a=e.target.closest('[data-a]');if(!a)return;
+  var d=document.getElementById('dlg'),id=d.dataset.id;
+  if(a.dataset.a==='close')d.close();
+  if(a.dataset.a==='edit'){d.close();startEdit(id)}
+  if(a.dataset.a==='del'&&confirm('¿Eliminar esta tarea? No se puede deshacer.')){d.close();try{await delTask(id);toast('Tarea eliminada')}catch(x){toast('No se pudo eliminar')}}
+});
+document.addEventListener('change',async function(e){
+  if(e.target.id!=='p-estado')return;var id=document.getElementById('dlg').dataset.id;
+  try{await patchTask(id,{estado:e.target.value});toast('Estado actualizado');document.getElementById('dlg').close()}catch(x){toast('No se pudo cambiar el estado')}
+});
+document.addEventListener('dragstart',function(e){var k=e.target.closest&&e.target.closest('.card');if(k&&canWrite){e.dataTransfer.setData('text/plain',k.dataset.id);e.dataTransfer.effectAllowed='move'}});
+document.addEventListener('dragover',function(e){var c=e.target.closest&&e.target.closest('.col');if(c&&canWrite){e.preventDefault();c.classList.add('over')}});
+document.addEventListener('dragleave',function(e){var c=e.target.closest&&e.target.closest('.col');if(c)c.classList.remove('over')});
+document.addEventListener('drop',async function(e){
+  var c=e.target.closest&&e.target.closest('.col');if(!c)return;e.preventDefault();c.classList.remove('over');
+  var id=e.dataTransfer.getData('text/plain'),t=tasks.find(function(x){return x.id===id});
+  if(t&&t.estado!==c.dataset.col){try{await patchTask(id,{estado:c.dataset.col})}catch(x){toast('No se pudo mover la tarea')}}
+});
+
+/* Arranque: muestra la página de inmediato y conecta la base compartida cuando esté lista */
+(async function(){
+  try{tasks=JSON.parse(localStorage.getItem('tareas')||'[]')}catch(e){tasks=[]}
+  render();
+  if(!(window.claude&&claude.use))return;
+  try{
+    var db=await Promise.race([claude.use('db'),new Promise(function(r){setTimeout(function(){r(null)},5000)})]);
+    if(!db)return;
+    try{var u=await claude.use('user');if(u&&u.can){var w=await u.can('data.write');if(w===false){canWrite=false}}}catch(e){}
+    coll=db.collection('tareas');tasks=[];
+    coll.onSnapshot(function(s){tasks=s.docs.map(function(d){return Object.assign({id:d.id},d.data())});render()},
+      function(){toast('Se perdió la conexión con los datos compartidos')});
+  }catch(e){}
+})();
+</script>
+</body>
+</html>
